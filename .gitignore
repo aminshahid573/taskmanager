@@ -1,0 +1,6 @@
+#Go
+/bin/
+/pkg/
+*.exe
+*.test
+*.out
