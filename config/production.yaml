@@ -46,5 +46,8 @@ log:
   format: "json"
 
 rate_limit:
+  enabled: true
   requests_per_minute: 100
   burst: 20
+  window: 60 # in seconds
+  metrics_namespace: taskmanager

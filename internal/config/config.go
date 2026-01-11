@@ -74,8 +74,11 @@ type LogConfig struct {
 }
 
 type RateLimitConfig struct {
-	RequestsPerMinute int `yaml:"requests_per_minute"`
-	Burst             int `yaml:"burst"`
+	RequestsPerMinute int    `yaml:"requests_per_minute"`
+	Burst             int    `yaml:"burst"`
+	Enabled           bool   `yaml:"enabled"`
+	Window            int    `yaml:"window"` // in seconds
+	MetricsNamespace  string `yaml:"metrics_namespace"`
 }
 
 func Load(path string) (*Config, error) {
@@ -158,6 +161,29 @@ func overrideWithEnv(cfg *Config) {
 	}
 	if v := os.Getenv("SMTP_PASSWORD"); v != "" {
 		cfg.Email.SMTPPassword = v
+	}
+
+	// Rate limit
+	if v := os.Getenv("RATE_LIMIT_REQUESTS_PER_MINUTE"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.RateLimit.RequestsPerMinute)
+	}
+	if v := os.Getenv("RATE_LIMIT_BURST"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.RateLimit.Burst)
+	}
+	if v := os.Getenv("RATE_LIMIT_ENABLED"); v != "" {
+		// accept "1", "true", "TRUE", "True"
+		lower := strings.ToLower(v)
+		if lower == "1" || lower == "true" || lower == "t" {
+			cfg.RateLimit.Enabled = true
+		} else {
+			cfg.RateLimit.Enabled = false
+		}
+	}
+	if v := os.Getenv("RATE_LIMIT_WINDOW"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.RateLimit.Window)
+	}
+	if v := os.Getenv("RATE_LIMIT_METRICS_NAMESPACE"); v != "" {
+		cfg.RateLimit.MetricsNamespace = v
 	}
 }
 
