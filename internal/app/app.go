@@ -22,5 +22,9 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 		}
 	}()
 
+	//initialize postgress
+	
+
+
 	return nil
 }
