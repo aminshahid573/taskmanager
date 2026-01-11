@@ -5,3 +5,4 @@
 *.test
 *.out
 notes.md
+/config/local.yaml
