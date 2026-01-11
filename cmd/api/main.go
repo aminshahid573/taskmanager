@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
+	"github.com/aminshahid573/taskmanager/internal/app"
 	"github.com/aminshahid573/taskmanager/internal/config"
 )
 
@@ -18,5 +20,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Loaded config: %+v\n", cfg)
+	
+	//setup structured looging
+	logger := app.NewLogger(cfg.Log.Level, cfg.Log.Format) 
+	slog.SetDefault(logger)
+
+	slog.Info("Starting application",
+		"env", cfg.App.Environment,
+		"version",cfg.App.Version,
+		)
+
 }
