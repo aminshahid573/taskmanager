@@ -30,4 +30,11 @@ func main() {
 		"version",cfg.App.Version,
 		)
 
+	//run application
+	if err := app.Run(cfg, logger); err != nil {
+		slog.Error("Application failed", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("Application stopped gracefully")
 }
