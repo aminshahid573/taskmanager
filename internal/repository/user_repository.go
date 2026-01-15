@@ -10,264 +10,139 @@ import (
 	"github.com/aminshahid573/taskmanager/internal/domain"
 )
 
-type OrgRepository struct {
+type UserRepository struct {
 	db *sql.DB
 }
 
-func NewOrgRepository(db *sql.DB) *OrgRepository {
-	return &OrgRepository{db: db}
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (r *OrgRepository) Create(ctx context.Context, org *domain.Organization) error {
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-	defer tx.Rollback()
-
-	// Create organization
-	org.ID = uuid.New()
-	org.CreatedAt = time.Now()
-	org.UpdatedAt = time.Now()
-
+func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO organizations (id, name, description, owner_id, created_at, updated_at)
+		INSERT INTO users (id, email, password_hash, name, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	_, err = tx.ExecContext(ctx, query,
-		org.ID, org.Name, org.Description, org.OwnerID,
-		org.CreatedAt, org.UpdatedAt,
+	user.ID = uuid.New()
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+
+	_, err := r.db.ExecContext(ctx, query,
+		user.ID, user.Email, user.PasswordHash, user.Name,
+		user.CreatedAt, user.UpdatedAt,
 	)
+
 	if err != nil {
 		return domain.ErrDatabaseError.WithError(err)
 	}
 
-	// Add owner as member
-	memberQuery := `
-		INSERT INTO org_members (id, org_id, user_id, role, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`
-
-	_, err = tx.ExecContext(ctx, memberQuery,
-		uuid.New(), org.ID, org.OwnerID, domain.RoleOwner,
-		time.Now(), time.Now(),
-	)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-
-	return tx.Commit()
+	return nil
 }
 
-func (r *OrgRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Organization, error) {
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
-		SELECT id, name, description, owner_id, created_at, updated_at, deleted_at
-		FROM organizations
+		SELECT id, email, password_hash, name, email_verified, email_verified_at, created_at, updated_at, deleted_at
+		FROM users
+		WHERE email = $1 AND deleted_at IS NULL
+	`
+
+	var user domain.User
+	err := r.db.QueryRowContext(ctx, query, email).Scan(
+		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.EmailVerified, &user.EmailVerifiedAt,
+		&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.NewAppError(domain.ErrCodeUserNotFound, "User not found", 404)
+		}
+		return nil, domain.ErrDatabaseError.WithError(err)
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	query := `
+		SELECT id, email, password_hash, name, email_verified, email_verified_at, created_at, updated_at, deleted_at
+		FROM users
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var org domain.Organization
+	var user domain.User
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&org.ID, &org.Name, &org.Description, &org.OwnerID,
-		&org.CreatedAt, &org.UpdatedAt, &org.DeletedAt,
+		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.EmailVerified, &user.EmailVerifiedAt,
+		&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 	)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.NewAppError(domain.ErrCodeOrgNotFound, "Organization not found", 404)
+			return nil, domain.NewAppError(domain.ErrCodeUserNotFound, "User not found", 404)
 		}
 		return nil, domain.ErrDatabaseError.WithError(err)
 	}
 
-	return &org, nil
+	return &user, nil
 }
 
-func (r *OrgRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]*domain.Organization, error) {
-	query := `
-		SELECT o.id, o.name, o.description, o.owner_id, o.created_at, o.updated_at
-		FROM organizations o
-		INNER JOIN org_members om ON o.id = om.org_id
-		WHERE om.user_id = $1 AND o.deleted_at IS NULL AND om.deleted_at IS NULL
-		ORDER BY o.created_at DESC
-	`
-
-	rows, err := r.db.QueryContext(ctx, query, userID)
-	if err != nil {
-		return nil, domain.ErrDatabaseError.WithError(err)
-	}
-	defer rows.Close()
-
-	var orgs []*domain.Organization
-	for rows.Next() {
-		var org domain.Organization
-		err := rows.Scan(
-			&org.ID, &org.Name, &org.Description, &org.OwnerID,
-			&org.CreatedAt, &org.UpdatedAt,
-		)
-		if err != nil {
-			return nil, domain.ErrDatabaseError.WithError(err)
-		}
-		orgs = append(orgs, &org)
-	}
-
-	return orgs, nil
-}
-
-func (r *OrgRepository) Update(ctx context.Context, org *domain.Organization) error {
-	org.UpdatedAt = time.Now()
-
-	query := `
-		UPDATE organizations
-		SET name = $1, description = $2, updated_at = $3
-		WHERE id = $4 AND deleted_at IS NULL
-	`
-
-	result, err := r.db.ExecContext(ctx, query,
-		org.Name, org.Description, org.UpdatedAt, org.ID,
-	)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-	if rows == 0 {
-		return domain.NewAppError(domain.ErrCodeOrgNotFound, "Organization not found", 404)
-	}
-
-	return nil
-}
-
-func (r *OrgRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `
-		UPDATE organizations
-		SET deleted_at = $1
-		WHERE id = $2 AND deleted_at IS NULL
-	`
-
-	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-	if rows == 0 {
-		return domain.NewAppError(domain.ErrCodeOrgNotFound, "Organization not found", 404)
-	}
-
-	return nil
-}
-
-func (r *OrgRepository) AddMember(ctx context.Context, member *domain.OrgMember) error {
-	member.ID = uuid.New()
-	member.CreatedAt = time.Now()
-	member.UpdatedAt = time.Now()
-
-	query := `
-		INSERT INTO org_members (id, org_id, user_id, role, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`
-
-	_, err := r.db.ExecContext(ctx, query,
-		member.ID, member.OrgID, member.UserID, member.Role,
-		member.CreatedAt, member.UpdatedAt,
-	)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-
-	return nil
-}
-
-func (r *OrgRepository) RemoveMember(ctx context.Context, orgID, userID uuid.UUID) error {
-	query := `
-		UPDATE org_members
-		SET deleted_at = $1
-		WHERE org_id = $2 AND user_id = $3 AND deleted_at IS NULL
-	`
-
-	result, err := r.db.ExecContext(ctx, query, time.Now(), orgID, userID)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-	if rows == 0 {
-		return domain.ErrNotMember
-	}
-
-	return nil
-}
-
-func (r *OrgRepository) GetMember(ctx context.Context, orgID, userID uuid.UUID) (*domain.OrgMember, error) {
-	query := `
-		SELECT id, org_id, user_id, role, created_at, updated_at
-		FROM org_members
-		WHERE org_id = $1 AND user_id = $2 AND deleted_at IS NULL
-	`
-
-	var member domain.OrgMember
-	err := r.db.QueryRowContext(ctx, query, orgID, userID).Scan(
-		&member.ID, &member.OrgID, &member.UserID, &member.Role,
-		&member.CreatedAt, &member.UpdatedAt,
-	)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.ErrNotMember
-		}
-		return nil, domain.ErrDatabaseError.WithError(err)
-	}
-
-	return &member, nil
-}
-
-func (r *OrgRepository) UpdateMemberRole(ctx context.Context, orgID, userID uuid.UUID, role domain.Role) error {
-	query := `
-		UPDATE org_members
-		SET role = $1, updated_at = $2
-		WHERE org_id = $3 AND user_id = $4 AND deleted_at IS NULL
-	`
-
-	result, err := r.db.ExecContext(ctx, query, role, time.Now(), orgID, userID)
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return domain.ErrDatabaseError.WithError(err)
-	}
-	if rows == 0 {
-		return domain.ErrNotMember
-	}
-
-	return nil
-}
-
-func (r *OrgRepository) IsMember(ctx context.Context, orgID, userID uuid.UUID) (bool, error) {
-	query := `
-		SELECT EXISTS(
-			SELECT 1 FROM org_members
-			WHERE org_id = $1 AND user_id = $2 AND deleted_at IS NULL
-		)
-	`
+func (r *UserRepository) EmailExists(ctx context.Context, email string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL)`
 
 	var exists bool
-	err := r.db.QueryRowContext(ctx, query, orgID, userID).Scan(&exists)
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&exists)
 	if err != nil {
 		return false, domain.ErrDatabaseError.WithError(err)
 	}
 
 	return exists, nil
+}
+
+func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
+	query := `
+		UPDATE users
+		SET name = $1, updated_at = $2
+		WHERE id = $3 AND deleted_at IS NULL
+	`
+
+	user.UpdatedAt = time.Now()
+	result, err := r.db.ExecContext(ctx, query, user.Name, user.UpdatedAt, user.ID)
+	if err != nil {
+		return domain.ErrDatabaseError.WithError(err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return domain.ErrDatabaseError.WithError(err)
+	}
+	if rows == 0 {
+		return domain.NewAppError(domain.ErrCodeUserNotFound, "User not found", 404)
+	}
+
+	return nil
+}
+
+func (r *UserRepository) VerifyEmail(ctx context.Context, userID uuid.UUID) error {
+	query := `
+		UPDATE users
+		SET email_verified = true, email_verified_at = $1, updated_at = $2
+		WHERE id = $3 AND deleted_at IS NULL
+	`
+
+	now := time.Now()
+	result, err := r.db.ExecContext(ctx, query, now, now, userID)
+	if err != nil {
+		return domain.ErrDatabaseError.WithError(err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return domain.ErrDatabaseError.WithError(err)
+	}
+	if rows == 0 {
+		return domain.NewAppError(domain.ErrCodeUserNotFound, "User not found", 404)
+	}
+
+	return nil
 }
 
