@@ -1,0 +1,31 @@
+{{ define "due_soon_content" }}
+
+<h1>Action Required</h1>
+
+<div class="greeting">Hello {{ .RecipientName }},</div>
+<p class="description">
+  Reminder: Your task is due soon. Please ensure all progress is updated before
+  the deadline.
+</p>
+
+<div class="detail-box amber">
+  <span class="label amber">Task</span>
+  <div class="value">{{ .TaskTitle }}</div>
+
+  <span class="label amber">Organization</span>
+  <div class="value">{{ .OrgName }}</div>
+
+  <span class="label amber">Due Date</span>
+  <div class="value due-date-pulse">{{ .DueDate }}</div>
+</div>
+
+<div style="text-align: left">
+  <a href="{{ .ActionURL }}" class="btn dark">View Task and Complete</a>
+    <p class="additional-info">
+    Please complete the task before the deadline. If you have already finished
+    this task, you can safely ignore this reminder.
+  </p>
+</div>
+
+{{ end }}
+

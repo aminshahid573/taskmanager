@@ -1,0 +1,48 @@
+{{ define "task_assigned_content" }}
+
+<h1
+  style="
+    color: #6b7280;
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  "
+>
+  Task Notification
+</h1>
+
+<div class="greeting">Hello {{ .RecipientName }},</div>
+<p class="description">
+  A new assignment has been posted in <strong>{{ .OrgName }}</strong>.
+</p>
+
+<div class="detail-box blue">
+  <span class="label blue">Task Title</span>
+  <div class="value">{{ .TaskTitle }}</div>
+
+  <span class="label blue">Organization</span>
+  <div class="value">{{ .OrgName }}</div>
+
+  <div
+    style="
+      font-size: 15px;
+      color: #64748b;
+      line-height: 1.6;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+    "
+  >
+    {{ .ExtraNote }}
+  </div>
+</div>
+
+<div style="text-align: left">
+  <a href="{{ .ActionURL }}" class="btn">View Task Details</a>
+  <p style="font-size: 13px; color: #9ca3af; margin-top: 24px">
+    Please log in to the system to view full documentation and attachments.
+  </p>
+</div>
+
+{{ end }}
+

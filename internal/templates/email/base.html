@@ -1,0 +1,294 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      /* ===== Basic Reset ===== */
+      body {
+          margin: 0;
+          padding: 0;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: {{ with .BackgroundColor }}{{ . }}{{ else }}#f8fafc{{ end }};
+          color: #1e293b;
+          -webkit-font-smoothing: antialiased;
+      }
+
+      /* ===== Common Animations ===== */
+      @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes subtleShake {
+          0% { transform: translateX(0); }
+          25% { transform: translateX(3px); }
+          50% { transform: translateX(-3px); }
+          75% { transform: translateX(3px); }
+          100% { transform: translateX(0); }
+      }
+
+      @keyframes urgencyPulse {
+          0% { color: #991b1b; }
+          50% { color: #ef4444; }
+          100% { color: #991b1b; }
+      }
+
+      @keyframes pulse {
+          0% { color: #b45309; }
+          50% { color: #f59e0b; }
+          100% { color: #b45309; }
+      }
+
+      @keyframes shimmer {
+          0% { background-position: -100px; }
+          100% { background-position: 200px; }
+      }
+
+      .animate-in {
+          animation: fadeIn 0.6s ease-out forwards;
+      }
+
+      .alert-shake {
+          animation: subtleShake 0.4s ease-in-out 0.8s;
+      }
+
+      .overdue-pulse {
+          animation: urgencyPulse 1.5s infinite ease-in-out;
+          font-weight: 700;
+      }
+
+      .due-date-pulse {
+          animation: pulse 2s infinite ease-in-out;
+          font-weight: 700;
+      }
+
+      /* ===== Layout ===== */
+      .wrapper {
+          width: 100%;
+          table-layout: fixed;
+          padding: 40px 0;
+      }
+
+      .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+          border: 1px solid #e5e7eb;
+      }
+
+      .content {
+          padding: 40px;
+      }
+
+      /* ===== Typography ===== */
+      .brand-header {
+          font-size: 14px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: #3b82f6;
+          margin-bottom: 32px;
+          text-align: center;
+      }
+
+      .status-badge {
+          display: inline-block;
+          font-size: 12px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #ffffff;
+          background-color: #dc2626;
+          padding: 4px 12px;
+          border-radius: 4px;
+          margin-bottom: 24px;
+      }
+
+      .greeting {
+          font-size: 20px;
+          font-weight: 600;
+          margin-bottom: 12px;
+          color: #0f172a;
+      }
+
+      .description {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #64748b;
+          margin-bottom: 32px;
+      }
+
+      h1 {
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #ef4444;
+          margin: 0 0 20px 0;
+          font-weight: 700;
+      }
+
+      /* ===== Detail Boxes ===== */
+      .detail-box {
+          background-color: #fff1f2;
+          border-left: 4px solid #dc2626;
+          padding: 24px;
+          margin-bottom: 32px;
+          border-radius: 0 4px 4px 0;
+      }
+
+      .detail-box.amber {
+          background-color: #fffbeb;
+          border-left-color: #f59e0b;
+      }
+
+      .detail-box.blue {
+          background-color: #f8fafc;
+          border-left-color: #2563eb;
+      }
+
+      .detail-box.gray {
+          background-color: #f1f5f9;
+          border-left-color: #64748b;
+      }
+
+      .code-container {
+          background-color: #f1f5f9;
+          padding: 24px;
+          border-radius: 8px;
+          margin: 0 auto 32px auto;
+          display: inline-block;
+          min-width: 200px;
+          text-align: center;
+      }
+
+      .label {
+          font-size: 11px;
+          font-weight: 700;
+          color: #991b1b;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+          display: block;
+          letter-spacing: 0.05em;
+      }
+
+      .label.amber {
+          color: #92400e;
+      }
+
+      .label.blue {
+          color: #1e40af;
+      }
+
+      .label.gray {
+          color: #64748b;
+      }
+
+      .value {
+          font-size: 16px;
+          font-weight: 600;
+          color: #111827;
+          margin-bottom: 16px;
+      }
+
+      .value:last-child {
+          margin-bottom: 0;
+      }
+
+      .verification-code {
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 32px;
+          font-weight: 700;
+          letter-spacing: 8px;
+          color: #1e293b;
+          display: block;
+          margin: 12px 0;
+      }
+
+      .expiry-note {
+          font-size: 13px;
+          color: #94a3b8;
+          margin-top: 8px;
+      }
+
+      .security-footer {
+          font-size: 13px;
+          color: #94a3b8;
+          line-height: 1.5;
+          padding-top: 32px;
+          border-top: 1px solid #f1f5f9;
+      }
+
+      /* ===== Buttons ===== */
+      .btn {
+          display: inline-block;
+          background-color: {{ with .PrimaryColor }}{{ . }}{{ else }}#2563eb{{ end }};
+          color: #ffffff !important;
+          text-decoration: none;
+          padding: 14px 28px;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 600;
+          transition: opacity 0.2s;
+      }
+
+      .btn.danger {
+          background-color: #dc2626;
+      }
+
+      .btn.dark {
+          background-color: #111827;
+      }
+
+      /* ===== Footer ===== */
+      .footer {
+          text-align: center;
+          padding: 32px 40px;
+          font-size: 14px;
+          color: #9ca3af;
+      }
+
+      .footer-text {
+          text-align: center;
+          padding-top: 24px;
+          font-size: 12px;
+          color: #cbd5e1;
+      }
+
+      .additional-info {
+          font-size: 13px;
+          color: #6b7280;
+          margin-top: 24px;
+          line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="container animate-in">
+        <div class="content">
+          {{ if eq .EmailType "task_assigned" }}{{ template
+          "task_assigned_content" . }}{{ else if eq .EmailType "due_soon" }}{{
+          template "due_soon_content" . }}{{ else if eq .EmailType "overdue"
+          }}{{ template "overdue_content" . }}{{ else if eq .EmailType
+          "otp_verification" }}{{ template "otp_content" . }}{{ end }}
+        </div>
+
+        <div class="footer">
+          <p style="margin: 0">
+            Best regards,<br />
+            <span style="color: #4b5563; font-weight: 600"
+              >Task Management System</span
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+{{ end }}
+

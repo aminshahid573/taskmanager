@@ -1,0 +1,31 @@
+{{ define "overdue_content" }}
+
+<div class="status-badge alert-shake">Urgent</div>
+
+<div class="greeting">Hello {{ .RecipientName }},</div>
+<p class="description">
+  Our records indicate that the following task is now <strong>overdue</strong>.
+  Please prioritize this task to avoid further delays.
+</p>
+
+<div class="detail-box">
+  <span class="label">Task Title</span>
+  <div class="value">{{ .TaskTitle }}</div>
+
+  <span class="label">Organization</span>
+  <div class="value">{{ .OrgName }}</div>
+
+  <span class="label">Was Due</span>
+  <div class="value overdue-pulse">{{ .DueDate }}</div>
+</div>
+
+<div style="text-align: left">
+  <a href="{{ .ActionURL }}" class="btn danger">Update Task Now</a>
+  <p class="additional-info">
+    Please complete this task as soon as possible. If you need an extension or
+    have questions, please contact your manager.
+  </p>
+</div>
+
+{{ end }}
+
