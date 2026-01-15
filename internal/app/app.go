@@ -90,12 +90,20 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 
 	// Initialize workers
 	emailWorker, err := worker.NewEmailWorker(cfg.Email, logger)
-
 	if err != nil {
 		return fmt.Errorf("email worker initialization: %w", err)
 	}
 
 	reminderWorker := worker.NewReminderWorker(taskRepo, userRepo, emailWorker, logger)
+
+	// Start background workers
+	workers := StartWorkers(ctx, emailWorker, reminderWorker)
+	cleanupFuncs = append(cleanupFuncs, func() error {
+		slog.Info("Stopping background workers")
+		workers.Cancel()
+		return nil
+	})
+
 
 
 	return nil
