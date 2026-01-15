@@ -2,9 +2,14 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/aminshahid573/taskmanager/internal/cache"
 	"github.com/aminshahid573/taskmanager/internal/config"
@@ -12,6 +17,7 @@ import (
 	"github.com/aminshahid573/taskmanager/internal/handler"
 	"github.com/aminshahid573/taskmanager/internal/ratelimit"
 	"github.com/aminshahid573/taskmanager/internal/repository"
+	"github.com/aminshahid573/taskmanager/internal/router"
 	"github.com/aminshahid573/taskmanager/internal/service"
 	"github.com/aminshahid573/taskmanager/internal/worker"
 )
@@ -111,6 +117,80 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 	orgHandler := handler.NewOrgHandler(orgService, logger)
 	taskHandler := handler.NewTaskHandler(taskService, userRepo, orgRepo, emailWorker, logger)
 
+	// Setup router
+	mux := router.Setup(
+		router.RouterConfig{
+			AuthHandler:           authHandler,
+			UserHandler:           userHandler,
+			OrgHandler:            orgHandler,
+			TaskHandler:           taskHandler,
+			AuthService:           authService,
+			RateLimiterMiddleware: rateLimiterMiddleware,
+			RateLimiter:           rateLimiterInstance,
+			Logger:                logger,
+		},
+	)
+
+	// Create HTTP server
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:      mux,
+		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
+		IdleTimeout:  time.Duration(cfg.Server.IdleTimeout) * time.Second,
+	}
+
+		// Start server in goroutine
+	serverErrors := make(chan error, 1)
+	go func() {
+		slog.Info("Starting HTTP server", "address", srv.Addr)
+		serverErrors <- srv.ListenAndServe()
+	}()
+
+	// Wait for shutdown signal
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErrors:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("server error: %w", err)
+		}
+
+	case sig := <-shutdown:
+		slog.Info("Shutdown signal received", "signal", sig.String())
+
+		// Graceful shutdown with timeout
+		shutdownCtx, shutdownCancel := context.WithTimeout(
+			context.Background(),
+			time.Duration(cfg.Server.ShutdownTimeout)*time.Second,
+		)
+		defer shutdownCancel()
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			slog.Error("Graceful shutdown failed", "error", err)
+			if err := srv.Close(); err != nil {
+				return fmt.Errorf("force shutdown: %w", err)
+			}
+		}
+
+		// Wait for background workers to finish
+		workers.Cancel()
+
+		done := make(chan struct{})
+		go func() {
+			workers.WG.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			slog.Info("Background workers stopped")
+		case <-time.After(5 * time.Second):
+			slog.Warn("Background workers shutdown timeout")
+		}
+	}
 
 	return nil
+
 }
