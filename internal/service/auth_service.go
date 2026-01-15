@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/config"
 	"github.com/aminshahid573/taskmanager/internal/domain"
 	"github.com/aminshahid573/taskmanager/internal/repository"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 

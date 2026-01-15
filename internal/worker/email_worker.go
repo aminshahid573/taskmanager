@@ -11,9 +11,9 @@ import (
 	"net/smtp"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/config"
 	"github.com/aminshahid573/taskmanager/internal/templates"
+	"github.com/google/uuid"
 )
 
 type EmailJob struct {
@@ -209,4 +209,3 @@ func formatDueDate(dueDate *time.Time) string {
 	}
 	return fmt.Sprintf("Due Date: %s", dueDate.Format("2006-01-02 15:04"))
 }
-

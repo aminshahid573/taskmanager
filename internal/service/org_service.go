@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/domain"
 	"github.com/aminshahid573/taskmanager/internal/repository"
+	"github.com/google/uuid"
 )
 
 // OrgRepository defines the behavior OrgService needs from the organization repository.
@@ -188,4 +188,3 @@ func (s *OrgService) checkAdminPermission(ctx context.Context, orgID, userID uui
 
 	return nil
 }
-

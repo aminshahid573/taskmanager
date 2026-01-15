@@ -89,4 +89,3 @@ func NewMetrics(namespace string) *Metrics {
 		),
 	}
 }
-

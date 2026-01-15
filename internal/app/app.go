@@ -20,7 +20,7 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 	defer cancel()
 
 	//track cleanup functions (LIFO order)
-	cleanupFuncs := make([]func() error,0)
+	cleanupFuncs := make([]func() error, 0)
 	defer func() {
 		//execute cleanup in reverse order
 		for i := len(cleanupFuncs) - 1; i > 0; i-- {
@@ -50,7 +50,7 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 		return redisClient.Close()
 	})
 
-		var rateLimiterMiddleware func(http.Handler) http.Handler
+	var rateLimiterMiddleware func(http.Handler) http.Handler
 	var rateLimiterInstance *ratelimit.RateLimiter
 	if cfg.RateLimit.Enabled {
 		rateLimiter, err := ratelimit.NewRateLimiter(cfg, redisClient)
@@ -103,8 +103,6 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 		workers.Cancel()
 		return nil
 	})
-
-
 
 	return nil
 }

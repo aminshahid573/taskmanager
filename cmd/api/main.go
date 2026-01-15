@@ -20,15 +20,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	//setup structured looging
-	logger := app.NewLogger(cfg.Log.Level, cfg.Log.Format) 
+	logger := app.NewLogger(cfg.Log.Level, cfg.Log.Format)
 	slog.SetDefault(logger)
 
 	slog.Info("Starting application",
 		"env", cfg.App.Environment,
-		"version",cfg.App.Version,
-		)
+		"version", cfg.App.Version,
+	)
 
 	//run application
 	if err := app.Run(cfg, logger); err != nil {

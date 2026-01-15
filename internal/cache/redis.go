@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/aminshahid573/taskmanager/internal/config"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisClient struct {
@@ -84,4 +84,3 @@ func (r *RedisClient) TTL(ctx context.Context, key string) (int64, error) {
 func (r *RedisClient) Close() error {
 	return r.client.Close()
 }
-

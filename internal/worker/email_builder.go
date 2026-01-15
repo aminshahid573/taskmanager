@@ -124,4 +124,3 @@ func (w *EmailWorker) buildOTPEmail(job EmailJob) (string, string) {
 
 	return subject, body.String()
 }
-

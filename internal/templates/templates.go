@@ -18,4 +18,3 @@ func LoadEmailTemplates() (*template.Template, error) {
 		"email/task_assigned.html",
 	)
 }
-

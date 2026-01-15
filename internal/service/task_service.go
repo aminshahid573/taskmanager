@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/domain"
 	"github.com/aminshahid573/taskmanager/internal/repository"
+	"github.com/google/uuid"
 )
 
 // TaskRepository defines the behavior TaskService needs from the task repository.
@@ -188,4 +188,3 @@ func (s *TaskService) Assign(ctx context.Context, userID, orgID, taskID, assigne
 
 	return s.taskRepo.Assign(ctx, taskID, orgID, assigneeID)
 }
-

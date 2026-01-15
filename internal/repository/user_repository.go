@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/domain"
+	"github.com/google/uuid"
 )
 
 type UserRepository struct {
@@ -145,4 +145,3 @@ func (r *UserRepository) VerifyEmail(ctx context.Context, userID uuid.UUID) erro
 
 	return nil
 }
-

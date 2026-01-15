@@ -45,4 +45,3 @@ func StartWorkers(
 		WG:     &wg,
 	}
 }
-

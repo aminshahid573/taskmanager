@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/domain"
+	"github.com/google/uuid"
 )
 
 type OrgRepository struct {
@@ -270,4 +270,3 @@ func (r *OrgRepository) IsMember(ctx context.Context, orgID, userID uuid.UUID) (
 
 	return exists, nil
 }
-

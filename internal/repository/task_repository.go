@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/domain"
+	"github.com/google/uuid"
 )
 
 type TaskRepository struct {
@@ -282,4 +282,3 @@ func (r *TaskRepository) GetOverdueTasks(ctx context.Context) ([]*domain.Task, e
 
 	return tasks, nil
 }
-

@@ -350,4 +350,3 @@ func (s *OTPService) GetOTPExpiryTime(ctx context.Context, email, ipAddress stri
 	}
 	return remaining, nil
 }
-

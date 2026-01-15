@@ -104,4 +104,3 @@ func (w *ReminderWorker) checkAndSendReminders(ctx context.Context) {
 		}
 	}
 }
-

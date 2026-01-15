@@ -18,10 +18,10 @@ func NewLogger(level, format string) *slog.Logger {
 		logLevel = slog.LevelError
 	default:
 		logLevel = slog.LevelInfo
-	} 
+	}
 
 	opts := &slog.HandlerOptions{
-		Level: logLevel,
+		Level:     logLevel,
 		AddSource: true,
 	}
 
