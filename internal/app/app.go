@@ -11,6 +11,7 @@ import (
 	"github.com/aminshahid573/taskmanager/internal/database"
 	"github.com/aminshahid573/taskmanager/internal/ratelimit"
 	"github.com/aminshahid573/taskmanager/internal/repository"
+	"github.com/aminshahid573/taskmanager/internal/service"
 )
 
 func Run(cfg *config.Config, logger *slog.Logger) error {
@@ -80,6 +81,11 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 	orgRepo := repository.NewOrgRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
 
+	// Initialize services
+	authService := service.NewAuthService(userRepo, redisClient, cfg.JWT)
+	otpService := service.NewOTPService(redisClient)
+	orgService := service.NewOrgService(orgRepo, userRepo)
+	taskService := service.NewTaskService(taskRepo, orgRepo)
 
 
 	return nil
