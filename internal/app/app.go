@@ -12,6 +12,7 @@ import (
 	"github.com/aminshahid573/taskmanager/internal/ratelimit"
 	"github.com/aminshahid573/taskmanager/internal/repository"
 	"github.com/aminshahid573/taskmanager/internal/service"
+	"github.com/aminshahid573/taskmanager/internal/worker"
 )
 
 func Run(cfg *config.Config, logger *slog.Logger) error {
@@ -86,6 +87,15 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 	otpService := service.NewOTPService(redisClient)
 	orgService := service.NewOrgService(orgRepo, userRepo)
 	taskService := service.NewTaskService(taskRepo, orgRepo)
+
+	// Initialize workers
+	emailWorker, err := worker.NewEmailWorker(cfg.Email, logger)
+
+	if err != nil {
+		return fmt.Errorf("email worker initialization: %w", err)
+	}
+
+	reminderWorker := worker.NewReminderWorker(taskRepo, userRepo, emailWorker, logger)
 
 
 	return nil
