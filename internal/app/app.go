@@ -10,6 +10,7 @@ import (
 	"github.com/aminshahid573/taskmanager/internal/config"
 	"github.com/aminshahid573/taskmanager/internal/database"
 	"github.com/aminshahid573/taskmanager/internal/ratelimit"
+	"github.com/aminshahid573/taskmanager/internal/repository"
 )
 
 func Run(cfg *config.Config, logger *slog.Logger) error {
@@ -73,6 +74,11 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 		}
 		slog.Info("Rate limiting disabled")
 	}
+
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
+	orgRepo := repository.NewOrgRepository(db)
+	taskRepo := repository.NewTaskRepository(db)
 
 
 
