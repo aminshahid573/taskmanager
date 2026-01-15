@@ -9,6 +9,7 @@ import (
 	"github.com/aminshahid573/taskmanager/internal/cache"
 	"github.com/aminshahid573/taskmanager/internal/config"
 	"github.com/aminshahid573/taskmanager/internal/database"
+	"github.com/aminshahid573/taskmanager/internal/handler"
 	"github.com/aminshahid573/taskmanager/internal/ratelimit"
 	"github.com/aminshahid573/taskmanager/internal/repository"
 	"github.com/aminshahid573/taskmanager/internal/service"
@@ -103,6 +104,13 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 		workers.Cancel()
 		return nil
 	})
+
+		// Initialize handlers
+	authHandler := handler.NewAuthHandler(authService, otpService, userRepo, emailWorker, logger)
+	userHandler := handler.NewUserHandler(userRepo)
+	orgHandler := handler.NewOrgHandler(orgService, logger)
+	taskHandler := handler.NewTaskHandler(taskService, userRepo, orgRepo, emailWorker, logger)
+
 
 	return nil
 }
