@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/aminshahid573/taskmanager/internal/config"
 )
 
