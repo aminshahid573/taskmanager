@@ -20,7 +20,7 @@ LDFLAGS := -ldflags="-w -s"
 COVERAGE_OUT := coverage.out
 COVERAGE_HTML := coverage.html
 
-# Help
+# help
 
 .PHONY: help
 help: ## Display this help screen
@@ -29,7 +29,7 @@ help: ## Display this help screen
 	@echo "Targets:"
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  %-25s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-# Build & Run
+# build and run
 
 .PHONY: all
 all: clean deps fmt lint vet test build ## Run all build steps
@@ -70,7 +70,7 @@ clean: ## Clean build artifacts
 	@go clean -cache -testcache
 	@echo "Clean complete"
 
-# Dependencies
+# dependency
 
 .PHONY: deps
 deps: ## Download dependencies
@@ -79,7 +79,7 @@ deps: ## Download dependencies
 	go mod tidy
 	@echo "Dependencies downloaded"
 
-# Code Quality
+# code quality
 
 .PHONY: fmt
 fmt: ## Format code
@@ -104,7 +104,7 @@ vet: ## Run go vet
 	go vet ./...
 	@echo "Vet complete"
 
-# Testing
+# testing
 
 .PHONY: test
 test: ## Run tests
@@ -120,13 +120,13 @@ test-coverage: ## Run tests with coverage report
 	go tool cover -func=$(COVERAGE_OUT)
 	@echo "Coverage report generated: $(COVERAGE_HTML)"
 
-# CI/CD
+# ci/cd
 
 .PHONY: ci
 ci: deps fmt lint vet test ## Run CI pipeline steps
 	@echo "CI pipeline complete"
 
-# Docker
+# docker
 
 .PHONY: docker-build
 docker-build: ## Build Docker image
@@ -149,6 +149,10 @@ docker-down: ## Stop Docker containers
 .PHONY: docker-restart
 docker-restart: docker-down docker-up ## Restart Docker containers
 
+.PHONY: docker-rebuild
+docker-rebuild: ## Rebuild and restart Docker containers
+	$(DOCKER_COMPOSE) up -d --build
+
 .PHONY: docker-logs
 docker-logs: ## View Docker container logs
 	$(DOCKER_COMPOSE) logs -f
@@ -160,7 +164,7 @@ docker-clean: ## Remove Docker containers and volumes
 	docker rmi $(DOCKER_IMAGE) 2>/dev/null || true
 	@echo "Docker cleanup complete"
 
-# Database Migrations
+# dtabase migration
 
 .PHONY: migrate
 migrate: migrate-up ## Alias for migrate-up
@@ -226,8 +230,6 @@ migrate-status: ## Check migration status
 		go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest; \
 		migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" version; \
 	fi
-
-# Default target
 
 .DEFAULT_GOAL := help
 
