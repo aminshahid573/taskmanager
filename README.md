@@ -90,6 +90,13 @@ All API requests (except public/auth) require an `Authorization: Bearer <token>`
 | `POST` | `/api/v1/auth/refresh` | Get new access token |
 | `POST` | `/api/v1/auth/logout` | Invalidate current session |
 
+### Users
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/users/me` | Get your current profile |
+| `GET` | `/api/v1/users/{id}` | Get another user's public info |
+| `PATCH` | `/api/v1/users/me` | Update your profile details |
+
 ### Organizations
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
