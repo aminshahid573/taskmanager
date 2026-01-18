@@ -37,7 +37,7 @@ The project follows a clean architecture pattern, separating concerns into Handl
 *   Docker & Docker Compose
 *   Make
 
-> The make file is overengineered 😅, i just learned Making Makefile so i use my all knowledge and implement everything here it may have some bugs i dont think so coz its working in my machine
+> The make file is overengineered 😅, i just learned Making Makefile so i use my all knowledge and implement everything here it may have some bugs, but i dont think so coz its working in my machine
 
 ### Quick Start (Docker)
 The easiest way to get the environment up is using Docker Compose:
