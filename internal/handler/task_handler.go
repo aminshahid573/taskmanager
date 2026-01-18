@@ -27,20 +27,22 @@ type TaskService interface {
 }
 
 type TaskHandler struct {
-	taskService TaskService
-	userRepo    *repository.UserRepository
-	orgRepo     *repository.OrgRepository
-	emailWorker *worker.EmailWorker
-	logger      *slog.Logger
+	taskService      TaskService
+	userRepo         *repository.UserRepository
+	orgRepo          *repository.OrgRepository
+	notificationRepo *repository.NotificationRepository
+	emailWorker      *worker.EmailWorker
+	logger           *slog.Logger
 }
 
-func NewTaskHandler(taskService *service.TaskService, userRepo *repository.UserRepository, orgRepo *repository.OrgRepository, emailWorker *worker.EmailWorker, logger *slog.Logger) *TaskHandler {
+func NewTaskHandler(taskService *service.TaskService, userRepo *repository.UserRepository, orgRepo *repository.OrgRepository, notificationRepo *repository.NotificationRepository, emailWorker *worker.EmailWorker, logger *slog.Logger) *TaskHandler {
 	return &TaskHandler{
-		taskService: taskService,
-		userRepo:    userRepo,
-		orgRepo:     orgRepo,
-		emailWorker: emailWorker,
-		logger:      logger,
+		taskService:      taskService,
+		userRepo:         userRepo,
+		orgRepo:          orgRepo,
+		notificationRepo: notificationRepo,
+		emailWorker:      emailWorker,
+		logger:           logger,
 	}
 }
 
@@ -69,17 +71,29 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		respondError(w, err)
 		return
 	}
-
 	// Queue email if task is assigned
 	if task.AssignedTo != nil {
 		// Get the assigned user and org for email details
 		assignedUser, err := h.userRepo.GetByID(r.Context(), *task.AssignedTo)
 		org, orgErr := h.orgRepo.GetByID(r.Context(), task.OrgID)
+
 		if err == nil && assignedUser != nil {
 			orgName := ""
 			if orgErr == nil && org != nil {
 				orgName = org.Name
 			}
+
+			// Create notification record for tracking
+			notification := &domain.TaskNotification{
+				TaskID:           task.ID,
+				UserID:           assignedUser.ID,
+				NotificationType: domain.NotificationTypeTaskAssigned,
+				Status:           domain.NotificationStatusPending,
+			}
+			if err := h.notificationRepo.Create(r.Context(), notification); err != nil {
+				h.logger.Error("Failed to create notification record", "error", err, "task_id", task.ID)
+			}
+
 			h.emailWorker.QueueJob(worker.EmailJob{
 				Type:           "task_assigned",
 				TaskID:         task.ID,
@@ -92,6 +106,13 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 				ActionURL:      fmt.Sprintf("http://localhost:3000/organizations/%s/tasks/%s", task.OrgID, task.ID),
 				ExtraNote:      task.Description,
 			})
+
+			// Mark as sent after queueing
+			if notification.ID != uuid.Nil {
+				if err := h.notificationRepo.MarkAsSent(r.Context(), notification.ID); err != nil {
+					h.logger.Error("Failed to mark notification as sent", "error", err, "notification_id", notification.ID)
+				}
+			}
 		}
 	}
 
@@ -223,17 +244,66 @@ func (h *TaskHandler) Assign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Queue email notification
-	h.emailWorker.QueueJob(worker.EmailJob{
-		Type:   "task_assigned",
-		TaskID: taskID,
-		OrgID:  orgID,
-	})
+	// Fetch task, user and org details for email notification
+	task, taskErr := h.taskService.Get(r.Context(), userID, orgID, taskID)
+	assignedUser, userErr := h.userRepo.GetByID(r.Context(), req.UserID)
+	org, orgErr := h.orgRepo.GetByID(r.Context(), orgID)
+
+	// Queue email notification only if we have the required details
+	if taskErr == nil && userErr == nil && assignedUser != nil && task != nil {
+		orgName := ""
+		if orgErr == nil && org != nil {
+			orgName = org.Name
+		}
+
+		// Create notification record for tracking
+		notification := &domain.TaskNotification{
+			TaskID:           taskID,
+			UserID:           req.UserID,
+			NotificationType: domain.NotificationTypeTaskAssigned,
+			Status:           domain.NotificationStatusPending,
+		}
+		if err := h.notificationRepo.Create(r.Context(), notification); err != nil {
+			h.logger.Error("Failed to create notification record", "error", err, "task_id", taskID)
+		}
+
+		h.logger.Debug("Queuing assignment email",
+			"task_id", taskID,
+			"recipient", assignedUser.Email,
+			"user_id", req.UserID,
+		)
+		h.emailWorker.QueueJob(worker.EmailJob{
+			Type:           "task_assigned",
+			TaskID:         taskID,
+			OrgID:          orgID,
+			RecipientEmail: assignedUser.Email,
+			RecipientName:  assignedUser.Name,
+			TaskTitle:      task.Title,
+			OrgName:        orgName,
+			DueDate:        task.DueDate,
+			ActionURL:      fmt.Sprintf("http://localhost:3000/organizations/%s/tasks/%s", orgID, taskID),
+			ExtraNote:      task.Description,
+		})
+
+		// Mark as sent after queueing
+		if notification.ID != uuid.Nil {
+			if err := h.notificationRepo.MarkAsSent(r.Context(), notification.ID); err != nil {
+				h.logger.Error("Failed to mark notification as sent", "error", err, "notification_id", notification.ID)
+			}
+		}
+	} else {
+		h.logger.Warn("Could not queue assignment email - failed to fetch details",
+			"task_err", taskErr,
+			"user_err", userErr,
+			"assigned_user_exists", assignedUser != nil,
+			"task_exists", task != nil,
+			"task_id", taskID,
+		)
+	}
 
 	h.logger.Info("Task assigned", "task_id", taskID, "assignee_id", req.UserID)
 	respondJSON(w, http.StatusOK, map[string]string{
 		"message": "Task assigned successfully",
 	})
 }
-
 

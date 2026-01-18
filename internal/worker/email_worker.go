@@ -11,9 +11,9 @@ import (
 	"net/smtp"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/aminshahid573/taskmanager/internal/config"
 	"github.com/aminshahid573/taskmanager/internal/templates"
-	"github.com/google/uuid"
 )
 
 type EmailJob struct {
@@ -80,7 +80,11 @@ func (w *EmailWorker) Start(ctx context.Context) {
 func (w *EmailWorker) QueueJob(job EmailJob) {
 	select {
 	case w.jobs <- job:
-		w.logger.Debug("Email job queued", "type", job.Type, "task_id", job.TaskID)
+		w.logger.Debug("Email job queued",
+			"type", job.Type,
+			"task_id", job.TaskID,
+			"recipient", job.RecipientEmail,
+		)
 	default:
 		w.logger.Warn("Email job queue full, dropping job", "type", job.Type)
 	}
@@ -89,7 +93,8 @@ func (w *EmailWorker) QueueJob(job EmailJob) {
 func (w *EmailWorker) ProcessJob(job EmailJob) error {
 	// Validate job has required fields
 	if job.RecipientEmail == "" {
-		return fmt.Errorf("recipient email is required for job type: %s", job.Type)
+		return fmt.Errorf("recipient email is required for job type: %s (task_id: %v, recipient_name: %s)",
+			job.Type, job.TaskID, job.RecipientName)
 	}
 
 	var subject, body string
@@ -207,5 +212,6 @@ func formatDueDate(dueDate *time.Time) string {
 	if dueDate == nil {
 		return "Due Date: Not set"
 	}
-	return fmt.Sprintf("Due Date: %s", dueDate.Format("2006-01-02 15:04"))
+	return fmt.Sprintf("Due Date: %s UTC", dueDate.Format("2006-01-02 15:04"))
 }
+

@@ -88,6 +88,7 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 	userRepo := repository.NewUserRepository(db)
 	orgRepo := repository.NewOrgRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, redisClient, cfg.JWT)
@@ -101,8 +102,7 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 		return fmt.Errorf("email worker initialization: %w", err)
 	}
 
-	reminderWorker := worker.NewReminderWorker(taskRepo, userRepo, emailWorker, logger)
-
+	reminderWorker := worker.NewReminderWorker(taskRepo, userRepo, notificationRepo, emailWorker, logger)
 	// Start background workers
 	workers := StartWorkers(ctx, emailWorker, reminderWorker)
 	cleanupFuncs = append(cleanupFuncs, func() error {
@@ -115,8 +115,7 @@ func Run(cfg *config.Config, logger *slog.Logger) error {
 	authHandler := handler.NewAuthHandler(authService, otpService, userRepo, emailWorker, logger)
 	userHandler := handler.NewUserHandler(userRepo)
 	orgHandler := handler.NewOrgHandler(orgService, logger)
-	taskHandler := handler.NewTaskHandler(taskService, userRepo, orgRepo, emailWorker, logger)
-
+	taskHandler := handler.NewTaskHandler(taskService, userRepo, orgRepo, notificationRepo, emailWorker, logger)
 	// Setup router
 	mux := router.Setup(
 		router.RouterConfig{

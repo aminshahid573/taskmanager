@@ -182,3 +182,32 @@ type ErrorResponse struct {
 	Message string            `json:"message"`
 	Details map[string]string `json:"details,omitempty"`
 }
+
+type NotificationType string
+
+const (
+	NotificationTypeDueSoon      NotificationType = "due_soon"
+	NotificationTypeOverdue      NotificationType = "overdue"
+	NotificationTypeTaskAssigned NotificationType = "task_assigned"
+)
+
+type NotificationStatus string
+
+const (
+	NotificationStatusPending NotificationStatus = "pending"
+	NotificationStatusSent    NotificationStatus = "sent"
+	NotificationStatusFailed  NotificationStatus = "failed"
+)
+
+type TaskNotification struct {
+	ID               uuid.UUID          `json:"id" db:"id"`
+	TaskID           uuid.UUID          `json:"task_id" db:"task_id"`
+	UserID           uuid.UUID          `json:"user_id" db:"user_id"`
+	NotificationType NotificationType   `json:"notification_type" db:"notification_type"`
+	SentAt           time.Time          `json:"sent_at" db:"sent_at"`
+	Status           NotificationStatus `json:"status" db:"status"`
+	RetryCount       int                `json:"retry_count" db:"retry_count"`
+	LastError        *string            `json:"last_error,omitempty" db:"last_error"`
+	CreatedAt        time.Time          `json:"created_at" db:"created_at"`
+}
+

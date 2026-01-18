@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aminshahid573/taskmanager/internal/domain"
 	"github.com/google/uuid"
+	"github.com/aminshahid573/taskmanager/internal/domain"
 )
 
 type TaskRepository struct {
@@ -217,14 +217,20 @@ func (r *TaskRepository) Assign(ctx context.Context, taskID, orgID, userID uuid.
 }
 
 func (r *TaskRepository) GetDueSoonTasks(ctx context.Context, hours int) ([]*domain.Task, error) {
+	// Query excludes tasks that have already received a 'due_soon' notification in the last 24 hours
 	query := `
 		SELECT t.id, t.org_id, t.title, t.description, t.status, t.assigned_to, t.due_date, t.created_by, t.created_at, t.updated_at
 		FROM tasks t
+		LEFT JOIN task_notifications n ON t.id = n.task_id 
+			AND n.notification_type = 'due_soon'
+			AND n.status = 'sent'
+			AND n.sent_at > NOW() - INTERVAL '24 hours'
 		WHERE t.due_date IS NOT NULL
 		AND t.due_date > NOW()
 		AND t.due_date <= NOW() + INTERVAL '1 hour' * $1
 		AND t.status != $2
 		AND t.deleted_at IS NULL
+		AND n.id IS NULL
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, hours, domain.TaskStatusDone)
@@ -251,13 +257,19 @@ func (r *TaskRepository) GetDueSoonTasks(ctx context.Context, hours int) ([]*dom
 }
 
 func (r *TaskRepository) GetOverdueTasks(ctx context.Context) ([]*domain.Task, error) {
+	// Query excludes tasks that have already received an 'overdue' notification in the last 24 hours
 	query := `
 		SELECT t.id, t.org_id, t.title, t.description, t.status, t.assigned_to, t.due_date, t.created_by, t.created_at, t.updated_at
 		FROM tasks t
+		LEFT JOIN task_notifications n ON t.id = n.task_id 
+			AND n.notification_type = 'overdue'
+			AND n.status = 'sent'
+			AND n.sent_at > NOW() - INTERVAL '24 hours'
 		WHERE t.due_date IS NOT NULL
 		AND t.due_date < NOW()
 		AND t.status != $1
 		AND t.deleted_at IS NULL
+		AND n.id IS NULL
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, domain.TaskStatusDone)
@@ -282,3 +294,4 @@ func (r *TaskRepository) GetOverdueTasks(ctx context.Context) ([]*domain.Task, e
 
 	return tasks, nil
 }
+
